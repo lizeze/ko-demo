@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.js"></script>
+    <script src="./ko.js"></script>
+
+
+</head>
+<body>
+<!-- ko foreach: data -->
+<span data-bind="text:name"></span>
+<!-- /ko -->
+
+<button onclick="a.search()">查询</button>
+<input type="text" data-bind="value:age">
+<button data-bind="click:a.nextPage,attr:{disabled:pageIndex()==totalPage()}">下</button>
+<button data-bind="click:a.prevPage,attr:{disabled:pageIndex()==1}">上</button>
+<button data-bind="click:a.aaa"> 自定义</button>
+<p>
+    <!-- ko foreach: list -->
+    <span data-bind="text:$data"></span>
+
+    <!-- /ko -->
+
+
+</p>
+</body>
+
+<script>
+    class koModel {
+        constructor(options) {
+            this.options = options;
+            this.queryUrl = options.queryUrl
+            if (options.fileds) {
+                options.fileds.forEach(item => {
+                    this[item.name] = item.value
+                })
+            }
+            for (const optionsKey in options.data) {
+                this[optionsKey] = options.data[optionsKey]
+
+            }
+        }
+
+        pageIndex = ko.observable(1)
+        pageSize = ko.observable(2)
+        total = ko.observable()
+        totalPage = ko.observable()
+        data = ko.observableArray([]);
+        search = () => {
+            let obj = {
+                pageIndex: this.pageIndex(),
+                pageSize: this.pageSize()
+            }
+            this.options.fileds.forEach(item => {
+                obj[item.name] = this[item.name]()
+            })
+            const params = $.extend(obj, this.optionss)
+            $.ajax({
+                type: 'get',
+                data: obj,
+                url: this.queryUrl,
+                success:
+                    data => {
+                        this.data = data.data;
+                        this.total = data.total;
+                        const totalPages = Math.ceil(data.total / this.pageSize());
+                        this.totalPage(totalPages)
+                    }
+            })
+        }
+        nextPage = () => {
+            if (this.pageIndex() < this.totalPage()) {
+                this.pageIndex(this.pageIndex() + 1)
+                this.search()
+            }
+        }
+        prevPage = function () {
+            if (this.pageIndex() > 1) {
+                this.pageIndex(this.pageIndex() - 1)
+                this.search()
+            }
+        }
+    }
+</script>
+<script>
+    let a = new koModel({
+        queryUrl: '1.json',
+        fileds: [{name: 'age', value: ko.observable('123')}],
+        data: {
+            code: ko.observable(123),
+            list: ko.observableArray([1, 2, 3])
+        }
+    })
+    a.aaa = function () {
+        console.log(a.code())
+        console.log(a.list())
+
+        a.code('李泽泽')
+        a.list([4, 5, 6, 78])
+
+        console.log(a.code())
+        console.log(a.list())
+    }
+    ko.applyBindings(a);
+
+</script>
+</html>
